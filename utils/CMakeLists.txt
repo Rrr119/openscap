@@ -2,6 +2,11 @@ install(PROGRAMS "oscap-run-sce-script"
 	DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
+# Machine readable per-rule results, merge and scan comparison toolkit.
+install(PROGRAMS "oscap-structured"
+	DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
 if(ENABLE_OSCAP_UTIL)
 	file(GLOB UTILS_SOURCES "*.c")
 	if(HAVE_GETOPT_H)

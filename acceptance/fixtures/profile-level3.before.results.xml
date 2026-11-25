@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="xccdf_com.example.mlps_benchmark_demo" resolved="1" xml:lang="zh-CN" style="SCAP_1.3">
+  <status date="2026-01-01">draft</status>
+  <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">等级保护主机安全基线（演示）</title>
+  <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">用于机器可读结构化结果、结果合并与两次扫描比对验收的演示 Benchmark，包含三个 Profile。</description>
+  <version>1.0</version>
+  <model system="urn:xccdf:scoring:default"/>
+  <Profile id="xccdf_com.example.mlps_profile_basic">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">基础基线</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">最小集合：口令有效期、最小长度、告警天数。</description>
+    <select idref="xccdf_com.example.mlps_rule_pass_max_days" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_min_len" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_warn_age" selected="true"/>
+  </Profile>
+  <Profile id="xccdf_com.example.mlps_profile_level2">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">等保二级</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">在基础基线之上增加 root 远程登录与登录横幅。</description>
+    <select idref="xccdf_com.example.mlps_rule_pass_max_days" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_min_len" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_warn_age" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_root_login" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_banner" selected="true"/>
+  </Profile>
+  <Profile id="xccdf_com.example.mlps_profile_level3">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">等保三级</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">全部六条规则，包含内核网络参数。</description>
+    <select idref="xccdf_com.example.mlps_rule_pass_max_days" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_min_len" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_warn_age" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_root_login" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_banner" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_ip_forward" selected="true"/>
+  </Profile>
+  <Rule id="xccdf_com.example.mlps_rule_pass_max_days" selected="false" role="full" severity="medium">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">口令最长使用期限应为 90 天</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">PASS_MAX_DAYS 应设置为 90，避免口令长期不更换。</description>
+    <fixtext xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">编辑 /etc/login.defs，设置 PASS_MAX_DAYS 90。</fixtext>
+    <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="fix_pass_max_days" system="urn:xccdf:fix:script:sh" complexity="low" disruption="low">grep -qE '^PASS_MAX_DAYS' /etc/login.defs &amp;&amp; sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' &gt;&gt; /etc/login.defs</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:1" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+  <Rule id="xccdf_com.example.mlps_rule_root_login" selected="false" role="full" severity="high">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">应禁止 root 直接远程登录</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">sshd_config 中 PermitRootLogin 应设置为 no。</description>
+    <fixtext xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">将 PermitRootLogin 设置为 no 并重启 sshd。</fixtext>
+    <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="fix_root_login" system="urn:xccdf:fix:script:sh" complexity="low" disruption="medium">sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' &gt;&gt; /etc/ssh/sshd_config
+systemctl restart sshd</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:2" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+  <Rule id="xccdf_com.example.mlps_rule_pass_min_len" selected="false" role="full" severity="medium">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">口令最小长度应为 8 位</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">pwquality.conf 中 minlen 应至少为 8。</description>
+    <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="fix_min_len" system="urn:xccdf:fix:script:sh">sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' &gt;&gt; /etc/security/pwquality.conf</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:3" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+  <Rule id="xccdf_com.example.mlps_rule_banner" selected="false" role="full" severity="low">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">应配置授权使用警告横幅</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">/etc/issue.net 应包含授权用户警告语。</description>
+    <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="fix_banner" system="urn:xccdf:fix:script:sh">echo 'Authorized users only. All activity may be monitored.' &gt; /etc/issue.net</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:4" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+  <Rule id="xccdf_com.example.mlps_rule_pass_warn_age" selected="false" role="full" severity="low">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">口令到期前应提前 7 天告警</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">PASS_WARN_AGE 应设置为 7。</description>
+    <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="fix_warn_age" system="urn:xccdf:fix:script:sh">sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' &gt;&gt; /etc/login.defs</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:5" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+  <Rule id="xccdf_com.example.mlps_rule_ip_forward" selected="false" role="full" severity="high">
+    <title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">应关闭 IPv4 转发</title>
+    <description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="zh-CN">net.ipv4.ip_forward 应设置为 0。</description>
+    <fix xmlns:xhtml="http://www.w3.org/1999/xhtml" id="fix_ip_forward" system="urn:xccdf:fix:script:sh">echo 'net.ipv4.ip_forward = 0' &gt; /etc/sysctl.d/99-cis.conf &amp;&amp; sysctl -w net.ipv4.ip_forward=0</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:6" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+  <TestResult id="xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3" start-time="2026-11-26T01:49:04+08:00" end-time="2026-11-26T01:49:04+08:00" version="1.0" test-system="cpe:/a:redhat:openscap:1.4.6">
+    <benchmark href="mlps-demo.xccdf.xml" id="xccdf_com.example.mlps_benchmark_demo"/>
+    <title>OSCAP Scan Result</title>
+    <identity authenticated="false" privileged="false">dev</identity>
+    <profile idref="xccdf_com.example.mlps_profile_level3"/>
+    <target>mlps-demo-host</target>
+    <rule-result idref="xccdf_com.example.mlps_rule_pass_max_days" role="full" time="2026-11-26T01:49:04+08:00" severity="medium" weight="1.000000">
+      <result>fail</result>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:com.example.mlps:def:1" href="mlps-demo.oval.xml"/>
+      </check>
+    </rule-result>
+    <rule-result idref="xccdf_com.example.mlps_rule_root_login" role="full" time="2026-11-26T01:49:04+08:00" severity="high" weight="1.000000">
+      <result>fail</result>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:com.example.mlps:def:2" href="mlps-demo.oval.xml"/>
+      </check>
+    </rule-result>
+    <rule-result idref="xccdf_com.example.mlps_rule_pass_min_len" role="full" time="2026-11-26T01:49:04+08:00" severity="medium" weight="1.000000">
+      <result>pass</result>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:com.example.mlps:def:3" href="mlps-demo.oval.xml"/>
+      </check>
+    </rule-result>
+    <rule-result idref="xccdf_com.example.mlps_rule_banner" role="full" time="2026-11-26T01:49:04+08:00" severity="low" weight="1.000000">
+      <result>pass</result>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:com.example.mlps:def:4" href="mlps-demo.oval.xml"/>
+      </check>
+    </rule-result>
+    <rule-result idref="xccdf_com.example.mlps_rule_pass_warn_age" role="full" time="2026-11-26T01:49:04+08:00" severity="low" weight="1.000000">
+      <result>pass</result>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:com.example.mlps:def:5" href="mlps-demo.oval.xml"/>
+      </check>
+    </rule-result>
+    <rule-result idref="xccdf_com.example.mlps_rule_ip_forward" role="full" time="2026-11-26T01:49:04+08:00" severity="high" weight="1.000000">
+      <result>pass</result>
+      <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+        <check-content-ref name="oval:com.example.mlps:def:6" href="mlps-demo.oval.xml"/>
+      </check>
+    </rule-result>
+    <score system="urn:xccdf:scoring:default" maximum="100.000000">66.666664</score>
+  </TestResult>
+</Benchmark>

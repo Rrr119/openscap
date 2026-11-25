@@ -1,0 +1,1307 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""oscap-structured - machine readable OpenSCAP results, merge and comparison.
+
+The 等保 (MLPS) assessment workflow needs rule oriented, machine parseable
+results instead of a human only HTML report.  This tool turns XCCDF result
+files and ARF result data streams produced by ``oscap xccdf eval`` into
+structured JSON records containing:
+
+    rule_id, result, evidence and remediation_commands
+
+It can also merge an arbitrary number of result files (different profiles or
+hosts) and compare two scans of the same host to list the rules that changed.
+
+Only the Python standard library is required.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as _dt
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import xml.etree.ElementTree as ET
+
+TOOL_NAME = "oscap-structured"
+TOOL_VERSION = "1.0.0"
+SCHEMA_ID = "oscap-structured-results/v1"
+
+# XCCDF result tokens, kept in the order used by the specification.
+RESULT_TOKENS = (
+    "pass", "fail", "error", "unknown", "notapplicable",
+    "notchecked", "notselected", "informational", "fixed",
+)
+
+SHELL_FIX_SYSTEMS = (
+    "urn:xccdf:fix:script:sh",
+    "urn:xccdf:fix:script:bash",
+    "urn:xccdf:fix:script:zsh",
+    "urn:xccdf:fix:script:csh",
+)
+
+
+# ---------------------------------------------------------------------------
+# Generic helpers
+# ---------------------------------------------------------------------------
+
+def local_name(tag):
+    """Return the namespace independent local name of an XML tag."""
+    if not isinstance(tag, str):
+        return ""
+    return tag.rsplit("}", 1)[-1]
+
+
+def is_named(element, name):
+    return element is not None and local_name(element.tag) == name
+
+
+def children_named(element, name):
+    if element is None:
+        return []
+    return [child for child in list(element) if is_named(child, name)]
+
+
+def child_named(element, name):
+    for child in children_named(element, name):
+        return child
+    return None
+
+
+def deep_named(element, name):
+    if element is None:
+        return []
+    return [node for node in element.iter() if is_named(node, name)]
+
+
+def element_text(element):
+    if element is None:
+        return ""
+    return " ".join("".join(element.itertext()).split())
+
+
+def utc_now_iso():
+    return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def compact_json(value):
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+# ---------------------------------------------------------------------------
+# XML normalization
+# ---------------------------------------------------------------------------
+
+class ParseInputError(Exception):
+    """Raised when an input document cannot be understood."""
+
+
+def _read_xml_tree(path):
+    if path == "-":
+        data = sys.stdin.buffer.read()
+        try:
+            return ET.ElementTree(ET.fromstring(data))
+        except ET.ParseError as exc:
+            raise ParseInputError("invalid XML on stdin: %s" % exc) from exc
+    try:
+        return ET.parse(path)
+    except FileNotFoundError as exc:
+        raise ParseInputError("no such file: %s" % path) from exc
+    except ET.ParseError as exc:
+        raise ParseInputError("cannot parse XML file %s: %s" % (path, exc)) from exc
+    except OSError as exc:
+        raise ParseInputError("cannot read %s: %s" % (path, exc)) from exc
+
+
+def _extract_fixes(rule_element):
+    """Return structured remediation information for an xccdf:Rule."""
+    fixes = []
+    for fix in children_named(rule_element, "fix"):
+        command = "\n".join(line.rstrip() for line in (fix.text or "").splitlines())
+        command = command.strip("\n").strip()
+        fixes.append({
+            "system": fix.get("system", ""),
+            "id": fix.get("id", ""),
+            "complexity": fix.get("complexity", ""),
+            "disruption": fix.get("disruption", ""),
+            "reboot": fix.get("reboot", ""),
+            "strategy": fix.get("strategy", ""),
+            "command": command,
+        })
+    fixtext = " ".join(
+        element_text(node) for node in children_named(rule_element, "fixtext")
+    ).strip()
+    return fixes, fixtext
+
+
+def _benchmark_metadata(root):
+    """Extract Rule/Profile metadata keyed by their XCCDF identifiers."""
+    rules = {}
+    rule_order = []
+    for rule in deep_named(root, "Rule"):
+        rule_id = rule.get("id")
+        if not rule_id or rule_id in rules:
+            continue
+        fixes, fixtext = _extract_fixes(rule)
+        rules[rule_id] = {
+            "title": element_text(child_named(rule, "title")),
+            "description": element_text(child_named(rule, "description")),
+            "severity": rule.get("severity", ""),
+            "selected_default": rule.get("selected", ""),
+            "weight": rule.get("weight", ""),
+            "fixes": fixes,
+            "fixtext": fixtext,
+        }
+        rule_order.append(rule_id)
+
+    profiles = {}
+    rule_profiles = {}
+    for profile in deep_named(root, "Profile"):
+        profile_id = profile.get("id", "")
+        if not profile_id:
+            continue
+        title = element_text(child_named(profile, "title"))
+        selected = []
+        for select in deep_named(profile, "select"):
+            ref = select.get("idref", "")
+            if ref and select.get("selected", "true").lower() in ("true", "1"):
+                selected.append(ref)
+                rule_profiles.setdefault(ref, []).append(profile_id)
+        profiles[profile_id] = {"id": profile_id, "title": title, "rules": selected}
+    return rules, rule_order, profiles, rule_profiles
+
+
+def _extract_oval_evidence(root):
+    """Build an OVAL definition id -> evidence list map from an ARF/OVAL doc.
+
+    The mapping follows OVAL's own references::
+
+        definition -> criterion@test_ref -> result test@test_id
+                   -> tested_item@item_id -> system_data item@id
+
+    The parsing is namespace independent and works for the ARF bundles
+    produced by OpenSCAP as well as standalone ``*-oval-results.xml`` files.
+    """
+    evidence = {}
+
+    # definition id -> test refs (evaluated result tree or plain definitions)
+    definition_tests = {}
+    for definition in root.iter():
+        if not is_named(definition, "definition"):
+            continue
+        def_id = definition.get("definition_id") or definition.get("id")
+        if not def_id:
+            continue
+        refs = []
+        for criterion in deep_named(definition, "criterion"):
+            ref = criterion.get("test_ref")
+            if ref:
+                refs.append(ref)
+        if refs:
+            definition_tests.setdefault(def_id, [])
+            for ref in refs:
+                if ref not in definition_tests[def_id]:
+                    definition_tests[def_id].append(ref)
+
+    # result tests: test_id -> (result, [item ids])
+    result_tests = {}
+    for test in root.iter():
+        if not is_named(test, "test"):
+            continue
+        test_id = test.get("test_id") or test.get("id")
+        if not test_id:
+            continue
+        item_ids = []
+        for item_ref in test.iter():
+            if local_name(item_ref.tag) in ("tested_item", "tested-item"):
+                item_id = item_ref.get("item_id") or item_ref.get("id")
+                if item_id:
+                    item_ids.append(item_id)
+        result_tests[test_id] = (test.get("result", ""), item_ids)
+
+    # system data items keyed by id
+    data_items = {}
+    for node in root.iter():
+        node_id = node.get("id")
+        tag = local_name(node.tag)
+        if node_id and tag.endswith("_item"):
+            fields = {}
+            for field_node in list(node):
+                key = local_name(field_node.tag)
+                value = element_text(field_node)
+                if value:
+                    fields[key] = value
+            data_items[node_id] = {"type": tag, "fields": fields}
+
+    for def_id, test_refs in definition_tests.items():
+        records = []
+        lines = []
+        for test_ref in test_refs:
+            test_result, item_ids = result_tests.get(test_ref, ("", []))
+            for item_id in item_ids:
+                item = data_items.get(item_id)
+                if not item:
+                    continue
+                fields = item["fields"]
+                filepath = fields.get("filepath") or fields.get("filename") or ""
+                observed = fields.get("subexpression", "")
+                matched = fields.get("text", "")
+                detail = {
+                    "source": "oval",
+                    "definition_id": def_id,
+                    "test_id": test_ref,
+                    "test_result": test_result,
+                    "item_type": item["type"],
+                    "filepath": filepath,
+                    "observed_value": observed,
+                    "matched_text": matched,
+                    "fields": fields,
+                }
+                records.append(detail)
+                location = ("%s: " % filepath) if filepath else ""
+                sentence = "%s%s" % (location, matched or observed or item["type"])
+                if observed and observed not in sentence:
+                    sentence += " (observed value: %s)" % observed
+                if test_result:
+                    sentence += " [OVAL test=%s]" % test_result
+                lines.append(sentence)
+        if records:
+            evidence[def_id] = {"lines": lines, "details": records}
+    return evidence
+
+
+def _rule_checks(rule_result):
+    checks = []
+    oval_definition_ids = []
+    for check in children_named(rule_result, "check"):
+        system = check.get("system", "")
+        for ref in children_named(check, "check-content-ref"):
+            name = ref.get("name", "")
+            href = ref.get("href", "")
+            checks.append({"system": system, "name": name, "href": href})
+            if name.startswith("oval:"):
+                oval_definition_ids.append(name)
+        # check-content may carry inline content; keep a minimal marker
+        if child_named(check, "check-content") is not None and not checks:
+            checks.append({"system": system, "name": "", "href": ""})
+    return checks, oval_definition_ids
+
+
+def _result_messages(rule_result):
+    messages = []
+    lines = []
+    for message in children_named(rule_result, "message"):
+        severity = message.get("severity", "info")
+        text = element_text(message)
+        if not text:
+            continue
+        messages.append({"severity": severity, "text": text})
+        lines.append("[%s] %s" % (severity, text))
+    return messages, lines
+
+
+def _count_results(rules):
+    counts = {token: 0 for token in RESULT_TOKENS}
+    counts["total"] = len(rules)
+    for rule in rules:
+        result = rule.get("result", "unknown") or "unknown"
+        counts[result] = counts.get(result, 0) + 1
+    return counts
+
+
+def _fix_strings(meta):
+    fixes = (meta or {}).get("fixes", [])
+    shell = [f["command"] for f in fixes
+             if f.get("command") and (
+                 f.get("system") in SHELL_FIX_SYSTEMS
+                 or "fix:script:sh" in f.get("system", "")
+                 or f.get("system", "").endswith("#sh"))]
+    if shell:
+        return shell
+    return [f["command"] for f in fixes if f.get("command")]
+
+
+def parse_xml_document(path):
+    """Parse an XCCDF results / Benchmark / ARF document into scans."""
+    tree = _read_xml_tree(path)
+    root = tree.getroot()
+
+    benchmark_rules, rule_order, profiles, rule_profiles = _benchmark_metadata(root)
+    oval_evidence = _extract_oval_evidence(root)
+
+    test_results = deep_named(root, "TestResult")
+    scans = []
+    if not test_results:
+        # Maybe the document itself is a Benchmark without results.
+        if benchmark_rules:
+            scans.append(_build_scan(
+                None, path, benchmark_rules, rule_order, profiles,
+                rule_profiles, oval_evidence))
+        return scans
+
+    for test_result in test_results:
+        scans.append(_build_scan(
+            test_result, path, benchmark_rules, rule_order, profiles,
+            rule_profiles, oval_evidence))
+    return scans
+
+
+def _build_scan(test_result, source_path, benchmark_rules, rule_order,
+                profiles, rule_profiles, oval_evidence):
+    tr = test_result
+    scan = {
+        "scan_id": "",
+        "host": "",
+        "profile_id": "",
+        "profile_title": "",
+        "benchmark_id": "",
+        "start_time": "",
+        "end_time": "",
+        "scanner": "",
+        "source_files": [source_path] if source_path != "-" else [],
+        "scores": [],
+        "rules": [],
+    }
+
+    rule_results = {}
+    rr_order = []
+    if tr is not None:
+        scan["scan_id"] = tr.get("id", "")
+        scan["start_time"] = tr.get("start-time", "")
+        scan["end_time"] = tr.get("end-time", "")
+        scan["scanner"] = tr.get("test-system", "")
+
+        benchmark = child_named(tr, "benchmark")
+        if benchmark is not None:
+            scan["benchmark_id"] = benchmark.get("id", "")
+        profile = child_named(tr, "profile")
+        if profile is not None:
+            scan["profile_id"] = profile.get("idref") or profile.get("id", "")
+
+        target = child_named(tr, "target")
+        if target is not None:
+            scan["host"] = element_text(target)
+
+        for score in children_named(tr, "score"):
+            scan["scores"].append({
+                "system": score.get("system", ""),
+                "maximum": _to_float(score.get("maximum")),
+                "score": _to_float(element_text(score)),
+            })
+
+        for rr in children_named(tr, "rule-result"):
+            rule_id = rr.get("idref", "")
+            if not rule_id:
+                continue
+            rule_results[rule_id] = rr
+            rr_order.append(rule_id)
+
+    if scan["profile_id"] and scan["profile_id"] in profiles:
+        scan["profile_title"] = profiles[scan["profile_id"]]["title"]
+
+    # Preserve benchmark order, then any result only rules.  A document that
+    # contains only a Benchmark (no TestResult) yields the rule catalog with
+    # its fixes and the synthetic "notchecked" result.
+    if tr is None:
+        ordered_ids = list(rule_order)
+    else:
+        ordered_ids = [rid for rid in rule_order if rid in rule_results]
+        for rid in rr_order:
+            if rid not in ordered_ids:
+                ordered_ids.append(rid)
+
+    for rule_id in ordered_ids:
+        rr = rule_results.get(rule_id)
+        meta = benchmark_rules.get(rule_id, {})
+        result_node = child_named(rr, "result") if rr is not None else None
+        result = element_text(result_node) if result_node is not None else "notchecked"
+
+        messages, message_lines = (_result_messages(rr) if rr is not None else ([], []))
+        checks, oval_ids = (_rule_checks(rr) if rr is not None else ([], []))
+
+        evidence_lines = list(message_lines)
+        evidence_details = list(messages)
+        for oval_id in oval_ids:
+            oval = oval_evidence.get(oval_id)
+            if oval:
+                for line in oval["lines"]:
+                    if line not in evidence_lines:
+                        evidence_lines.append(line)
+                evidence_details.extend(oval["details"])
+
+        remediation_commands = _fix_strings(meta)
+        rule_profiles_for_rule = list(rule_profiles.get(rule_id, []))
+
+        severity = (rr.get("severity") if rr is not None else "") or meta.get("severity", "")
+        rule = {
+            "rule_id": rule_id,
+            "id": rule_id,
+            "result": result or "unknown",
+            "severity": severity,
+            "title": meta.get("title", ""),
+            "description": meta.get("description", ""),
+            "profile_ids": rule_profiles_for_rule,
+            "checks": checks,
+            "evidence": evidence_lines,
+            "evidence_text": "\n".join(evidence_lines),
+            "evidence_details": evidence_details,
+            "remediation_commands": remediation_commands,
+            "remediation_command": remediation_commands[0] if remediation_commands else "",
+            "remediation": "\n".join(remediation_commands),
+            "remediation_text": meta.get("fixtext", ""),
+            "remediations": meta.get("fixes", []),
+        }
+        if rr is not None and rr.get("time"):
+            rule["evaluated_at"] = rr.get("time")
+        scan["rules"].append(rule)
+
+    scan["summary"] = _count_results(scan["rules"])
+    return scan
+
+
+def _to_float(value):
+    if value in (None, ""):
+        return None
+    try:
+        number = float(value)
+        return int(number) if number.is_integer() else number
+    except (TypeError, ValueError):
+        return value
+
+
+# ---------------------------------------------------------------------------
+# Structured JSON input support
+# ---------------------------------------------------------------------------
+
+def _scan_from_json_obj(obj, source):
+    """Validate/normalize a scan dictionary coming from our own JSON."""
+    if not isinstance(obj, dict):
+        return None
+    rules = obj.get("rules")
+    if not isinstance(rules, list):
+        return None
+    normalized_rules = []
+    for raw in rules:
+        if not isinstance(raw, dict):
+            continue
+        rule = dict(raw)
+        rule_id = rule.get("rule_id") or rule.get("id")
+        if not rule_id:
+            continue
+        rule["rule_id"] = rule_id
+        rule.setdefault("id", rule_id)
+        rule.setdefault("result", "unknown")
+        rule.setdefault("evidence", [])
+        rule.setdefault("remediation_commands", [])
+        if isinstance(rule["evidence"], str):
+            rule["evidence"] = [rule["evidence"]] if rule["evidence"] else []
+        if isinstance(rule["remediation_commands"], str):
+            rule["remediation_commands"] = [rule["remediation_commands"]]
+        normalized_rules.append(rule)
+
+    scan = {
+        "scan_id": obj.get("scan_id", "") or obj.get("id", ""),
+        "host": obj.get("host", ""),
+        "profile_id": obj.get("profile_id", ""),
+        "profile_title": obj.get("profile_title", ""),
+        "benchmark_id": obj.get("benchmark_id", ""),
+        "start_time": obj.get("start_time", ""),
+        "end_time": obj.get("end_time", ""),
+        "scanner": obj.get("scanner", ""),
+        "source_files": [source],
+        "scores": obj.get("scores", []),
+        "rules": normalized_rules,
+        "summary": obj.get("summary") or _count_results(normalized_rules),
+    }
+    nested_scan = obj.get("scan")
+    if isinstance(nested_scan, dict):
+        for key in ("scan_id", "host", "profile_id", "profile_title",
+                    "benchmark_id", "start_time", "end_time", "scanner"):
+            if not scan[key] and nested_scan.get(key):
+                scan[key] = nested_scan[key]
+        if not scan["scores"] and nested_scan.get("scores"):
+            scan["scores"] = nested_scan["scores"]
+    return scan
+
+
+def load_scans(path):
+    """Load any supported input and return a flat list of scan dicts."""
+    if path == "-":
+        raw = sys.stdin.read()
+        return _load_scans_from_string(raw, path)
+    if path.lower().endswith(".json"):
+        with open(path, "r", encoding="utf-8") as handle:
+            raw = handle.read()
+        return _load_scans_from_string(raw, path)
+    return parse_xml_document(path)
+
+
+def _load_scans_from_string(raw, source):
+    stripped = raw.lstrip()
+    if stripped.startswith("<"):
+        # XML from stdin: persist through the XML parser entry point.
+        try:
+            root = ET.fromstring(raw)
+        except ET.ParseError as exc:
+            raise ParseInputError("invalid XML in %s: %s" % (source, exc)) from exc
+        benchmark_rules, rule_order, profiles, rule_profiles = _benchmark_metadata(root)
+        oval_evidence = _extract_oval_evidence(root)
+        test_results = deep_named(root, "TestResult")
+        if not test_results:
+            if benchmark_rules:
+                return [_build_scan(None, source, benchmark_rules, rule_order,
+                                    profiles, rule_profiles, oval_evidence)]
+            return []
+        return [_build_scan(tr, source, benchmark_rules, rule_order, profiles,
+                            rule_profiles, oval_evidence) for tr in test_results]
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ParseInputError("invalid JSON in %s: %s" % (source, exc)) from exc
+    if isinstance(data, list):
+        scan = _scan_from_json_obj({"rules": data}, source)
+        return [scan] if scan else []
+    if not isinstance(data, dict):
+        raise ParseInputError("JSON root must be an object or array: %s" % source)
+
+    if isinstance(data.get("rules"), list):
+        rules = data["rules"]
+        group_keys = {
+            (rule.get("host", ""), rule.get("profile_id", ""), rule.get("scan_id", ""))
+            for rule in rules if isinstance(rule, dict)
+        }
+        is_merged = data.get("kind") in ("merged_results", "structured_results_set")
+        if is_merged and len(group_keys) > 1:
+            groups = {}
+            order = []
+            for rule in rules:
+                key = (rule.get("host", ""), rule.get("profile_id", ""),
+                       rule.get("scan_id", ""))
+                if key not in groups:
+                    groups[key] = []
+                    order.append(key)
+                groups[key].append(rule)
+            scans = []
+            for key in order:
+                host, profile_id, scan_id = key
+                scan = _scan_from_json_obj({
+                    "host": host, "profile_id": profile_id, "scan_id": scan_id,
+                    "rules": groups[key],
+                }, source)
+                if scan:
+                    scans.append(scan)
+            if scans:
+                return scans
+        scan = _scan_from_json_obj(data, source)
+        if scan:
+            return [scan]
+
+    # Backwards compatible shape: scans carrying their own rule arrays.
+    scans = []
+    if isinstance(data.get("scans"), list) and data["scans"]:
+        for item in data["scans"]:
+            if isinstance(item, dict) and isinstance(item.get("rules"), list):
+                scan = _scan_from_json_obj(item, source)
+                if scan:
+                    scans.append(scan)
+    if scans:
+        return scans
+    raise ParseInputError("no scans/rules found in JSON: %s" % source)
+
+
+def load_many(paths):
+    scans = []
+    errors = []
+    for path in paths:
+        try:
+            scans.extend(load_scans(path))
+        except ParseInputError as exc:
+            errors.append(str(exc))
+    if errors and not scans:
+        raise ParseInputError("; ".join(errors))
+    return scans, errors
+
+
+# ---------------------------------------------------------------------------
+# Document builders
+# ---------------------------------------------------------------------------
+
+def _base_document(kind):
+    return {
+        "tool": TOOL_NAME,
+        "tool_version": TOOL_VERSION,
+        "schema": SCHEMA_ID,
+        "kind": kind,
+        "generated_at": utc_now_iso(),
+    }
+
+
+def build_export_document(scans, sources):
+    """Build the document for ``export``.
+
+    Multiple scans that share the same scan id (results.xml + arf.xml of the
+    same oscap run) are merged so enrichment from both files combines.
+    """
+    merged = _merge_same_run_scans(scans)
+    if len(merged) == 1:
+        scan = merged[0]
+        scan["source_files"] = sorted(set(scan.get("source_files", []) + list(sources)))
+        doc = _base_document("structured_results")
+        doc.update({
+            "host": scan.get("host", ""),
+            "profile_id": scan.get("profile_id", ""),
+            "profile": {
+                "id": scan.get("profile_id", ""),
+                "title": scan.get("profile_title", ""),
+            },
+            "benchmark_id": scan.get("benchmark_id", ""),
+            "summary": scan.get("summary", _count_results(scan["rules"])),
+            "scan": _scan_summary(scan),
+            "rules": scan["rules"],
+        })
+        return doc
+
+    doc = build_merge_document(merged, sources)
+    doc["kind"] = "structured_results_set"
+    return doc
+
+
+_SCAN_META_KEYS = (
+    "scan_id", "host", "profile_id", "profile_title", "benchmark_id",
+    "start_time", "end_time", "scanner", "source_files", "scores", "summary",
+)
+
+
+def _scan_summary(scan):
+    summary = {key: scan.get(key) for key in _SCAN_META_KEYS}
+    summary["rule_count"] = len(scan.get("rules", []))
+    return summary
+
+
+def _merge_same_run_scans(scans):
+    """Combine duplicate representations of one scan (xml + arf)."""
+    groups = []
+    index = {}
+    for scan in scans:
+        key = scan.get("scan_id") or "%s|%s" % (scan.get("host"), scan.get("end_time"))
+        if key and key in index:
+            target = index[key]
+            _merge_scan_into(target, scan)
+        else:
+            index[key] = scan
+            groups.append(scan)
+    return groups
+
+
+def _merge_scan_into(target, extra):
+    for key in ("host", "profile_id", "profile_title", "benchmark_id",
+                "start_time", "end_time", "scanner", "scan_id"):
+        if not target.get(key) and extra.get(key):
+            target[key] = extra[key]
+    target["source_files"] = sorted(set(
+        target.get("source_files", []) + extra.get("source_files", [])))
+    by_id = {rule["rule_id"]: rule for rule in target["rules"]}
+    for rule in extra["rules"]:
+        existing = by_id.get(rule["rule_id"])
+        if existing is None:
+            target["rules"].append(rule)
+            by_id[rule["rule_id"]] = rule
+            continue
+        for key, value in rule.items():
+            if key in ("evidence",):
+                for item in value:
+                    if item not in existing.setdefault(key, []):
+                        existing[key].append(item)
+            elif key == "evidence_details":
+                existing.setdefault(key, [])
+                for item in value:
+                    if item not in existing[key]:
+                        existing[key].append(item)
+            elif key == "remediation_commands":
+                for item in value:
+                    if item not in existing.setdefault(key, []):
+                        existing[key].append(item)
+            elif not existing.get(key) and value:
+                existing[key] = value
+        existing["evidence_text"] = "\n".join(existing.get("evidence", []))
+        if existing.get("remediation_commands"):
+            existing["remediation_command"] = existing["remediation_commands"][0]
+            existing["remediation"] = "\n".join(existing["remediation_commands"])
+    target["summary"] = _count_results(target["rules"])
+
+
+def build_merge_document(scans, sources=None):
+    doc = _base_document("merged_results")
+    all_rules = []
+    hosts = []
+    profiles = {}
+    for scan in scans:
+        host = scan.get("host", "")
+        profile_id = scan.get("profile_id", "")
+        if host and host not in hosts:
+            hosts.append(host)
+        if profile_id:
+            profiles[profile_id] = scan.get("profile_title", "")
+        for rule in scan["rules"]:
+            tagged = dict(rule)
+            tagged["host"] = host
+            tagged["profile_id"] = profile_id or tagged.get("profile_id", "")
+            tagged["scan_id"] = scan.get("scan_id", "")
+            all_rules.append(tagged)
+
+    unique = {}
+    for rule in all_rules:
+        entry = unique.setdefault(rule["rule_id"], {
+            "rule_id": rule["rule_id"],
+            "id": rule["rule_id"],
+            "title": rule.get("title", ""),
+            "severity": rule.get("severity", ""),
+            "occurrences": [],
+        })
+        entry["occurrences"].append({
+            "host": rule.get("host", ""),
+            "profile_id": rule.get("profile_id", ""),
+            "scan_id": rule.get("scan_id", ""),
+            "result": rule.get("result", ""),
+        })
+        if not entry.get("title") and rule.get("title"):
+            entry["title"] = rule["title"]
+        if rule.get("remediation_commands") and not entry.get("remediation_commands"):
+            # Keep the dedup view lightweight: human readable evidence lines
+            # and command strings only (full details stay on ``rules``).
+            for key in ("evidence", "evidence_text", "remediation_commands",
+                        "remediation_command", "remediation", "remediation_text"):
+                entry[key] = rule.get(key)
+
+    unique_rules = []
+    for rule_id, entry in unique.items():
+        results = {occ["result"] for occ in entry["occurrences"] if occ["result"]}
+        entry["result"] = next(iter(results)) if len(results) == 1 else "mixed"
+        entry["result_values"] = sorted(results)
+        unique_rules.append(entry)
+    unique_rules.sort(key=lambda r: r["rule_id"])
+
+    totals = {token: 0 for token in RESULT_TOKENS}
+    for rule in all_rules:
+        totals[rule["result"]] = totals.get(rule["result"], 0) + 1
+    totals["total"] = len(all_rules)
+
+    doc.update({
+        "sources": sources or [],
+        "hosts": hosts,
+        "profiles": [{"id": pid, "title": title} for pid, title in profiles.items()],
+        "summary": {
+            "scans": len(scans),
+            "rule_occurrences": len(all_rules),
+            "unique_rules": len(unique_rules),
+            "results": totals,
+        },
+        "scans": [_scan_summary(scan) for scan in scans],
+        "rules": all_rules,
+        "unique_rules": unique_rules,
+    })
+    return doc
+
+
+# ---------------------------------------------------------------------------
+# Diff / comparison
+# ---------------------------------------------------------------------------
+
+def _index_rules(scan):
+    return {rule["rule_id"]: rule for rule in scan.get("rules", []) if rule.get("rule_id")}
+
+
+def compute_diff(old_scan, new_scan, ignore_evidence=False):
+    old_rules = _index_rules(old_scan)
+    new_rules = _index_rules(new_scan)
+    changes = []
+
+    for rule_id in sorted(set(old_rules) | set(new_rules)):
+        old = old_rules.get(rule_id)
+        new = new_rules.get(rule_id)
+        if old is None:
+            changes.append(_change("added", rule_id, None, new))
+            continue
+        if new is None:
+            changes.append(_change("removed", rule_id, old, None))
+            continue
+
+        old_result = old.get("result", "unknown")
+        new_result = new.get("result", "unknown")
+        old_ev = list(old.get("evidence", []))
+        new_ev = list(new.get("evidence", []))
+        old_fix = list(old.get("remediation_commands", []))
+        new_fix = list(new.get("remediation_commands", []))
+
+        if old_result != new_result:
+            change = _change("result_changed", rule_id, old, new)
+            change["old_result"] = old_result
+            change["new_result"] = new_result
+            change["changes"] = {"result": {"old": old_result, "new": new_result}}
+            changes.append(change)
+        elif not ignore_evidence and old_ev != new_ev:
+            change = _change("evidence_changed", rule_id, old, new)
+            change["changes"] = {"evidence": {"old": old_ev, "new": new_ev}}
+            changes.append(change)
+        elif old_fix != new_fix:
+            change = _change("remediation_changed", rule_id, old, new)
+            change["changes"] = {"remediation_commands": {"old": old_fix, "new": new_fix}}
+            changes.append(change)
+
+    type_counts = {}
+    for change in changes:
+        type_counts[change["change_type"]] = type_counts.get(change["change_type"], 0) + 1
+
+    host = new_scan.get("host") or old_scan.get("host", "")
+    diff = _base_document("structured_diff")
+    diff.update({
+        "host": host,
+        "same_host": (not old_scan.get("host") or not new_scan.get("host")
+                      or old_scan.get("host") == new_scan.get("host")),
+        "profile_id": new_scan.get("profile_id") or old_scan.get("profile_id", ""),
+        "old": {
+            "host": old_scan.get("host", ""),
+            "scan_id": old_scan.get("scan_id", ""),
+            "end_time": old_scan.get("end_time", ""),
+            "profile_id": old_scan.get("profile_id", ""),
+        },
+        "new": {
+            "host": new_scan.get("host", ""),
+            "scan_id": new_scan.get("scan_id", ""),
+            "end_time": new_scan.get("end_time", ""),
+            "profile_id": new_scan.get("profile_id", ""),
+        },
+        "has_changes": bool(changes),
+        "changed_rules": [c["rule_id"] for c in changes],
+        "summary": {
+            "total_rules_old": len(old_rules),
+            "total_rules_new": len(new_rules),
+            "changed": len(changes),
+            "by_type": type_counts,
+            "unchanged": len(set(old_rules) & set(new_rules)) - sum(
+                1 for c in changes if c["change_type"] not in ("added", "removed")),
+        },
+        "changes": changes,
+    })
+    return diff
+
+
+def _change(change_type, rule_id, old, new):
+    current = new or old or {}
+    return {
+        "change_type": change_type,
+        "rule_id": rule_id,
+        "id": rule_id,
+        "title": current.get("title", ""),
+        "severity": current.get("severity", ""),
+        "old_result": (old or {}).get("result", ""),
+        "new_result": (new or {}).get("result", ""),
+        "old_evidence": (old or {}).get("evidence", []),
+        "new_evidence": (new or {}).get("evidence", []),
+        "old_remediation_commands": (old or {}).get("remediation_commands", []),
+        "new_remediation_commands": (new or {}).get("remediation_commands", []),
+    }
+
+
+def select_scan(scans, host=None, profile=None, index=None):
+    if not scans:
+        raise ParseInputError("no scannable results found")
+    candidates = scans
+    if host:
+        filtered = [s for s in candidates if s.get("host") == host]
+        if filtered:
+            candidates = filtered
+    if profile:
+        filtered = [s for s in candidates if s.get("profile_id") == profile]
+        if filtered:
+            candidates = filtered
+    if index is not None:
+        if index >= len(candidates):
+            raise ParseInputError("scan index %d out of range" % index)
+        return candidates[index]
+    if len(candidates) == 1:
+        return candidates[0]
+    # Default to the last scan (most recent evaluation) but make the choice
+    # explicit through scan_count metadata in callers.
+    return candidates[-1]
+
+
+def build_diff_document(old_scans, new_scans, host=None, profile=None,
+                        ignore_evidence=False):
+    """Compare two result sets, pairing hosts when multiple scans exist."""
+    old = select_scan(old_scans, host, profile)
+    new = select_scan(new_scans, host, profile)
+    return compute_diff(old, new, ignore_evidence=ignore_evidence)
+
+
+# ---------------------------------------------------------------------------
+# Rendering
+# ---------------------------------------------------------------------------
+
+def render_json(document, compact=False):
+    if compact:
+        return json.dumps(document, ensure_ascii=False, separators=(",", ":"))
+    return json.dumps(document, ensure_ascii=False, indent=2)
+
+
+def render_jsonl(rules):
+    lines = []
+    for rule in rules:
+        lines.append(json.dumps(rule, ensure_ascii=False, sort_keys=True))
+    return "\n".join(lines) + ("\n" if lines else "")
+
+
+def render_diff_text(diff):
+    out = []
+    out.append("Host: %s" % (diff.get("host") or "(unknown)"))
+    if not diff.get("same_host", True):
+        out.append("WARNING: old and new scans report different hosts")
+    summary = diff["summary"]
+    out.append("Changes: %d (old rules=%d, new rules=%d, unchanged=%d)" % (
+        summary["changed"], summary["total_rules_old"],
+        summary["total_rules_new"], summary["unchanged"]))
+    for change in diff["changes"]:
+        if change["change_type"] == "result_changed":
+            out.append("  %s  %s: %s -> %s" % (
+                change["rule_id"], change["change_type"],
+                change["old_result"], change["new_result"]))
+        else:
+            out.append("  %s  %s" % (change["rule_id"], change["change_type"]))
+        title = change.get("title")
+        if title:
+            out.append("      title: %s" % title)
+        for ev in change.get("new_evidence", [])[:3]:
+            out.append("      evidence: %s" % ev)
+    if not diff["changes"]:
+        out.append("No changes detected.")
+    return "\n".join(out) + "\n"
+
+
+def render_diff_markdown(diff):
+    out = ["# Scan comparison", ""]
+    out.append("- Host: `%s`" % (diff.get("host") or "unknown"))
+    summary = diff["summary"]
+    out.append("- Changes: **%d** (unchanged: %d)" % (
+        summary["changed"], summary["unchanged"]))
+    out.append("")
+    if diff["changes"]:
+        out.append("| Rule | Change | Result |")
+        out.append("| --- | --- | --- |")
+        for change in diff["changes"]:
+            result = ""
+            if change["old_result"] or change["new_result"]:
+                result = "%s -> %s" % (change["old_result"] or "-",
+                                       change["new_result"] or "-")
+            out.append("| `%s` | %s | %s |" % (
+                change["rule_id"], change["change_type"], result))
+        out.append("")
+    else:
+        out.append("No changes detected.")
+    return "\n".join(out) + "\n"
+
+
+def write_output(text, output_path):
+    if output_path:
+        with open(output_path, "w", encoding="utf-8") as handle:
+            handle.write(text)
+    else:
+        sys.stdout.write(text)
+
+
+# ---------------------------------------------------------------------------
+# ``run`` - invoke oscap and export in one step
+# ---------------------------------------------------------------------------
+
+def find_oscap(explicit=None):
+    if explicit:
+        return explicit if os.path.exists(explicit) else shutil.which(explicit)
+    env_bin = os.environ.get("OSCAP_BIN")
+    if env_bin and os.path.exists(env_bin):
+        return env_bin
+    found = shutil.which("oscap")
+    if found:
+        return found
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(here, "..", "build", "utils", "oscap"),
+        os.path.join(here, "..", "build", "oscap"),
+        "/usr/local/bin/oscap",
+        "/usr/bin/oscap",
+    ]
+    for candidate in candidates:
+        if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+            return os.path.abspath(candidate)
+    return None
+
+
+def run_oscap_and_export(args, remainder):
+    oscap_bin = find_oscap(args.oscap_bin)
+    if not oscap_bin:
+        raise ParseInputError(
+            "oscap executable not found; install OpenSCAP, set OSCAP_BIN or "
+            "pass --oscap-bin")
+
+    temp_dir = tempfile.mkdtemp(prefix="oscap-structured-")
+    results_xml = os.path.join(temp_dir, "xccdf-results.xml")
+    results_arf = os.path.join(temp_dir, "results.arf.xml")
+    pass_opts, pass_positionals = _split_passthrough(remainder)
+    cmd = [
+        oscap_bin, "xccdf", "eval",
+        "--profile", args.profile,
+        "--results", results_xml,
+        "--results-arf", results_arf,
+    ]
+    cmd.extend(pass_opts)
+    cmd.append(args.target)
+    cmd.extend(pass_positionals)
+
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                          text=True)
+    # oscap returns 0 when all rules pass, 2 when there are failures; both
+    # still produce valid result documents.
+    if proc.returncode not in (0, 2):
+        sys.stderr.write(proc.stdout)
+        sys.stderr.write(proc.stderr)
+        raise ParseInputError(
+            "oscap xccdf eval failed with exit code %d" % proc.returncode)
+
+    inputs = [path for path in (results_arf, results_xml) if os.path.exists(path)]
+    if not inputs:
+        sys.stderr.write(proc.stderr)
+        raise ParseInputError("oscap did not produce result documents")
+
+    scans, errors = load_many(inputs)
+    if errors:
+        for error in errors:
+            print("warning: %s" % error, file=sys.stderr)
+    doc = build_export_document(scans, [args.target])
+    if args.host:
+        doc["host"] = args.host
+        if isinstance(doc.get("scan"), dict):
+            doc["scan"]["host"] = args.host
+        for scan in doc.get("scans", []):
+            if isinstance(scan, dict):
+                scan["host"] = args.host
+    text = _format_export(args, doc)
+    write_output(text, args.output)
+    if args.keep_temp:
+        print("raw oscap results kept in %s" % temp_dir, file=sys.stderr)
+    else:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+    return 0
+
+
+# oscap xccdf eval options that consume the following token as their value.
+_OSCAP_VALUE_OPTIONS = {
+    "--tailoring-file", "--tailoring-id", "--cpe", "--reference", "--rule",
+    "--skip-rule", "--datastream-id", "--xccdf-id", "--benchmark-id",
+    "--local-files", "--verbose", "--verbose-log-file", "--profile",
+}
+
+
+def _split_passthrough(tokens):
+    """Split forwarded oscap args into options and trailing positionals.
+
+    popt stops treating dash tokens as options once the INPUT_FILE positional
+    has been seen, so options must precede the target while extra OVAL files
+    must follow it.
+    """
+    options = []
+    positionals = []
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "--":
+            index += 1
+            continue
+        if token.startswith("-") and token != "-":
+            if "=" in token or token not in _OSCAP_VALUE_OPTIONS:
+                options.append(token)
+                index += 1
+            elif index + 1 < len(tokens):
+                options.extend([token, tokens[index + 1]])
+                index += 2
+            else:
+                options.append(token)
+                index += 1
+        else:
+            positionals.append(token)
+            index += 1
+    return options, positionals
+
+
+def _format_export(args, doc):
+    fmt = getattr(args, "format", "json")
+    if fmt == "jsonl":
+        return render_jsonl(doc.get("rules", []))
+    if fmt == "list":
+        return json.dumps(doc.get("rules", []), ensure_ascii=False,
+                          indent=None if args.compact else 2) + "\n"
+    return render_json(doc, compact=args.compact) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        prog=TOOL_NAME,
+        description="Structured per-rule results, merging and scan comparison "
+                    "for OpenSCAP (等保 machine readable reporting).")
+    parser.add_argument("--version", action="version",
+                        version="%s %s" % (TOOL_NAME, TOOL_VERSION))
+    sub = parser.add_subparsers(dest="command")
+
+    p_export = sub.add_parser("export", aliases=["convert", "rules"],
+                              help="convert XCCDF/ARF result(s) to structured JSON")
+    p_export.add_argument("inputs", nargs="+", help="XCCDF results / ARF / JSON file(s)")
+    p_export.add_argument("-o", "--output", help="write output to FILE instead of stdout")
+    p_export.add_argument("--format", choices=["json", "jsonl", "list"], default="json")
+    p_export.add_argument("--host", help="override/set the host identifier")
+    p_export.add_argument("--profile", help="select a profile when input has several")
+    p_export.add_argument("--compact", action="store_true", help="compact JSON")
+    p_export.set_defaults(func=cmd_export)
+
+    p_merge = sub.add_parser("merge", aliases=["combine"],
+                             help="merge multiple result files into one document")
+    p_merge.add_argument("inputs", nargs="+")
+    p_merge.add_argument("-o", "--output")
+    p_merge.add_argument("--format", choices=["json", "jsonl", "list"], default="json")
+    p_merge.add_argument("--compact", action="store_true")
+    p_merge.set_defaults(func=cmd_merge)
+
+    p_diff = sub.add_parser("diff", aliases=["compare"],
+                            help="compare two scans of the same host")
+    p_diff.add_argument("old", help="older result file (xml/arf/json)")
+    p_diff.add_argument("new", help="newer result file (xml/arf/json)")
+    p_diff.add_argument("-o", "--output")
+    p_diff.add_argument("--format", choices=["json", "text", "markdown", "md"],
+                        default="json")
+    p_diff.add_argument("--host", help="select this host from multi-host files")
+    p_diff.add_argument("--profile", help="select this profile from multi-profile files")
+    p_diff.add_argument("--ignore-evidence", action="store_true",
+                        help="only compare results/remediation, ignore evidence text")
+    p_diff.add_argument("--fail-on-change", action="store_true",
+                        help="exit with status 1 when changes are detected")
+    p_diff.set_defaults(func=cmd_diff)
+
+    p_run = sub.add_parser("run", help="run oscap and directly emit structured results",
+                           description="Extra oscap arguments may be passed after '--'.")
+    add_run_arguments(p_run)
+    p_run.set_defaults(func=cmd_run)
+
+    return parser
+
+
+def add_run_arguments(parser):
+    parser.add_argument("target", help="XCCDF/DS content evaluated by oscap")
+    parser.add_argument("--profile", required=True)
+    parser.add_argument("-o", "--output")
+    parser.add_argument("--format", choices=["json", "jsonl", "list"], default="json")
+    parser.add_argument("--compact", action="store_true")
+    parser.add_argument("--host", help="override host identifier in output")
+    parser.add_argument("--oscap-bin", help="path to the oscap executable")
+    parser.add_argument("--keep-temp", action="store_true")
+    return parser
+
+
+def cmd_export(args):
+    scans, errors = load_many(args.inputs)
+    if not scans:
+        raise ParseInputError("no XCCDF TestResult/rule data found in: %s"
+                              % ", ".join(args.inputs))
+    if args.profile:
+        scans = [s for s in scans if s.get("profile_id") == args.profile] or scans
+    if args.host:
+        for scan in scans:
+            scan["host"] = args.host
+    doc = build_export_document(scans, args.inputs)
+    text = _format_export(args, doc)
+    write_output(text, args.output)
+    return 0
+
+
+def cmd_merge(args):
+    scans, errors = load_many(args.inputs)
+    if not scans:
+        raise ParseInputError("no result data found in: %s" % ", ".join(args.inputs))
+    for error in errors:
+        print("warning: %s" % error, file=sys.stderr)
+    doc = build_merge_document(scans, args.inputs)
+    if args.format == "jsonl":
+        text = render_jsonl(doc["rules"])
+    elif args.format == "list":
+        text = json.dumps(doc["rules"], ensure_ascii=False, indent=2) + "\n"
+    else:
+        text = render_json(doc, compact=args.compact) + "\n"
+    write_output(text, args.output)
+    return 0
+
+
+def cmd_diff(args):
+    old_scans = load_scans(args.old)
+    new_scans = load_scans(args.new)
+    doc = build_diff_document(old_scans, new_scans, host=args.host,
+                              profile=args.profile,
+                              ignore_evidence=args.ignore_evidence)
+    if args.format == "text":
+        text = render_diff_text(doc)
+    elif args.format in ("markdown", "md"):
+        text = render_diff_markdown(doc)
+    else:
+        text = render_json(doc) + "\n"
+    write_output(text, args.output)
+    if args.fail_on_change and doc["has_changes"]:
+        return 1
+    return 0
+
+
+def cmd_run(args):
+    remainder = list(getattr(args, "oscap_args", []) or [])
+    if remainder and remainder[0] == "--":
+        remainder = remainder[1:]
+    return run_oscap_and_export(args, remainder)
+
+
+def main(argv=None):
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+    parser = build_parser()
+    supplied = list(sys.argv[1:] if argv is None else argv)
+    # ``run`` forwards unknown options to oscap, so parse it permissively and
+    # allow the target/profile options on either side of the positional input.
+    if supplied and supplied[0] == "run":
+        run_parser = argparse.ArgumentParser(
+            prog="%s run" % TOOL_NAME,
+            description="Run oscap and emit structured results. Extra tokens "
+                        "after '--' (or unknown options) are passed to oscap.")
+        add_run_arguments(run_parser)
+        args, unknown = run_parser.parse_known_args(supplied[1:])
+        args.command = "run"
+        args.func = cmd_run
+        args.oscap_args = unknown
+    else:
+        args = parser.parse_args(argv)
+    if not getattr(args, "command", None):
+        parser.print_help(sys.stderr)
+        return 2
+    try:
+        return args.func(args)
+    except ParseInputError as exc:
+        print("%s: error: %s" % (TOOL_NAME, exc), file=sys.stderr)
+        return 2
+    except KeyboardInterrupt:
+        return 130
+
+
+if __name__ == "__main__":
+    sys.exit(main())

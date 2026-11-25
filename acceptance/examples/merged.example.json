@@ -1,0 +1,1466 @@
+{
+  "tool": "oscap-structured",
+  "tool_version": "1.0.0",
+  "schema": "oscap-structured-results/v1",
+  "kind": "merged_results",
+  "generated_at": "2026-11-25T18:08:55Z",
+  "sources": [
+    "acceptance/fixtures/profile-basic.before.arf.xml",
+    "acceptance/fixtures/profile-level2.before.arf.xml",
+    "acceptance/fixtures/profile-level3.before.arf.xml"
+  ],
+  "hosts": [
+    "mlps-demo-host"
+  ],
+  "profiles": [
+    {
+      "id": "xccdf_com.example.mlps_profile_basic",
+      "title": "基础基线"
+    },
+    {
+      "id": "xccdf_com.example.mlps_profile_level2",
+      "title": "等保二级"
+    },
+    {
+      "id": "xccdf_com.example.mlps_profile_level3",
+      "title": "等保三级"
+    }
+  ],
+  "summary": {
+    "scans": 3,
+    "rule_occurrences": 18,
+    "unique_rules": 6,
+    "results": {
+      "pass": 9,
+      "fail": 5,
+      "error": 0,
+      "unknown": 0,
+      "notapplicable": 0,
+      "notchecked": 0,
+      "notselected": 4,
+      "informational": 0,
+      "fixed": 0,
+      "total": 18
+    }
+  },
+  "scans": [
+    {
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_basic",
+      "profile_title": "基础基线",
+      "benchmark_id": "xccdf_com.example.mlps_benchmark_demo",
+      "start_time": "2026-11-26T01:49:04+08:00",
+      "end_time": "2026-11-26T01:49:04+08:00",
+      "scanner": "cpe:/a:redhat:openscap:1.4.6",
+      "source_files": [
+        "acceptance/fixtures/profile-basic.before.arf.xml"
+      ],
+      "scores": [
+        {
+          "system": "urn:xccdf:scoring:default",
+          "maximum": 100,
+          "score": 66.666664
+        }
+      ],
+      "summary": {
+        "pass": 2,
+        "fail": 1,
+        "error": 0,
+        "unknown": 0,
+        "notapplicable": 0,
+        "notchecked": 0,
+        "notselected": 3,
+        "informational": 0,
+        "fixed": 0,
+        "total": 6
+      },
+      "rule_count": 6
+    },
+    {
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level2",
+      "profile_title": "等保二级",
+      "benchmark_id": "xccdf_com.example.mlps_benchmark_demo",
+      "start_time": "2026-11-26T01:49:04+08:00",
+      "end_time": "2026-11-26T01:49:04+08:00",
+      "scanner": "cpe:/a:redhat:openscap:1.4.6",
+      "source_files": [
+        "acceptance/fixtures/profile-level2.before.arf.xml"
+      ],
+      "scores": [
+        {
+          "system": "urn:xccdf:scoring:default",
+          "maximum": 100,
+          "score": 60
+        }
+      ],
+      "summary": {
+        "pass": 3,
+        "fail": 2,
+        "error": 0,
+        "unknown": 0,
+        "notapplicable": 0,
+        "notchecked": 0,
+        "notselected": 1,
+        "informational": 0,
+        "fixed": 0,
+        "total": 6
+      },
+      "rule_count": 6
+    },
+    {
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level3",
+      "profile_title": "等保三级",
+      "benchmark_id": "xccdf_com.example.mlps_benchmark_demo",
+      "start_time": "2026-11-26T01:49:04+08:00",
+      "end_time": "2026-11-26T01:49:04+08:00",
+      "scanner": "cpe:/a:redhat:openscap:1.4.6",
+      "source_files": [
+        "acceptance/fixtures/profile-level3.before.arf.xml"
+      ],
+      "scores": [
+        {
+          "system": "urn:xccdf:scoring:default",
+          "maximum": 100,
+          "score": 66.666664
+        }
+      ],
+      "summary": {
+        "pass": 4,
+        "fail": 2,
+        "error": 0,
+        "unknown": 0,
+        "notapplicable": 0,
+        "notchecked": 0,
+        "notselected": 0,
+        "informational": 0,
+        "fixed": 0,
+        "total": 6
+      },
+      "rule_count": 6
+    }
+  ],
+  "rules": [
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_max_days",
+      "id": "xccdf_com.example.mlps_rule_pass_max_days",
+      "result": "fail",
+      "severity": "medium",
+      "title": "口令最长使用期限应为 90 天",
+      "description": "PASS_MAX_DAYS 应设置为 90，避免口令长期不更换。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_basic",
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:1",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/login.defs: PASS_MAX_DAYS 99999 [OVAL test=false]"
+      ],
+      "evidence_text": "/scan-root/etc/login.defs: PASS_MAX_DAYS 99999 [OVAL test=false]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:1",
+          "test_id": "oval:com.example.mlps:tst:1",
+          "test_result": "false",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/login.defs",
+          "observed_value": "99999",
+          "matched_text": "PASS_MAX_DAYS 99999",
+          "fields": {
+            "filepath": "/scan-root/etc/login.defs",
+            "path": "/scan-root/etc",
+            "filename": "login.defs",
+            "pattern": "^PASS_MAX_DAYS[\\t ]+(\\S+)",
+            "instance": "1",
+            "line": "^PASS_MAX_DAYS[\\t ]+(\\S+)",
+            "text": "PASS_MAX_DAYS 99999",
+            "subexpression": "99999"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs"
+      ],
+      "remediation_command": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs",
+      "remediation": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs",
+      "remediation_text": "编辑 /etc/login.defs，设置 PASS_MAX_DAYS 90。",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_pass_max_days",
+          "complexity": "low",
+          "disruption": "low",
+          "reboot": "",
+          "strategy": "",
+          "command": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_basic",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_root_login",
+      "id": "xccdf_com.example.mlps_rule_root_login",
+      "result": "notselected",
+      "severity": "high",
+      "title": "应禁止 root 直接远程登录",
+      "description": "sshd_config 中 PermitRootLogin 应设置为 no。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [],
+      "evidence": [],
+      "evidence_text": "",
+      "evidence_details": [],
+      "remediation_commands": [
+        "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd"
+      ],
+      "remediation_command": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd",
+      "remediation": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd",
+      "remediation_text": "将 PermitRootLogin 设置为 no 并重启 sshd。",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_root_login",
+          "complexity": "low",
+          "disruption": "medium",
+          "reboot": "",
+          "strategy": "",
+          "command": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_basic",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_min_len",
+      "id": "xccdf_com.example.mlps_rule_pass_min_len",
+      "result": "pass",
+      "severity": "medium",
+      "title": "口令最小长度应为 8 位",
+      "description": "pwquality.conf 中 minlen 应至少为 8。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_basic",
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:3",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/security/pwquality.conf: minlen = 8 [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/security/pwquality.conf: minlen = 8 [OVAL test=true]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:3",
+          "test_id": "oval:com.example.mlps:tst:3",
+          "test_result": "true",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/security/pwquality.conf",
+          "observed_value": "8",
+          "matched_text": "minlen = 8",
+          "fields": {
+            "filepath": "/scan-root/etc/security/pwquality.conf",
+            "path": "/scan-root/etc/security",
+            "filename": "pwquality.conf",
+            "pattern": "^minlen[\\t ]*=[\\t ]*([0-9]+)",
+            "instance": "1",
+            "line": "^minlen[\\t ]*=[\\t ]*([0-9]+)",
+            "text": "minlen = 8",
+            "subexpression": "8"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf"
+      ],
+      "remediation_command": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf",
+      "remediation": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_min_len",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_basic",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_banner",
+      "id": "xccdf_com.example.mlps_rule_banner",
+      "result": "notselected",
+      "severity": "low",
+      "title": "应配置授权使用警告横幅",
+      "description": "/etc/issue.net 应包含授权用户警告语。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [],
+      "evidence": [],
+      "evidence_text": "",
+      "evidence_details": [],
+      "remediation_commands": [
+        "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net"
+      ],
+      "remediation_command": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net",
+      "remediation": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_banner",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_basic",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_warn_age",
+      "id": "xccdf_com.example.mlps_rule_pass_warn_age",
+      "result": "pass",
+      "severity": "low",
+      "title": "口令到期前应提前 7 天告警",
+      "description": "PASS_WARN_AGE 应设置为 7。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_basic",
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:5",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/login.defs: PASS_WARN_AGE 7 [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/login.defs: PASS_WARN_AGE 7 [OVAL test=true]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:5",
+          "test_id": "oval:com.example.mlps:tst:5",
+          "test_result": "true",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/login.defs",
+          "observed_value": "7",
+          "matched_text": "PASS_WARN_AGE 7",
+          "fields": {
+            "filepath": "/scan-root/etc/login.defs",
+            "path": "/scan-root/etc",
+            "filename": "login.defs",
+            "pattern": "^PASS_WARN_AGE[\\t ]+([0-9]+)",
+            "instance": "1",
+            "line": "^PASS_WARN_AGE[\\t ]+([0-9]+)",
+            "text": "PASS_WARN_AGE 7",
+            "subexpression": "7"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs"
+      ],
+      "remediation_command": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs",
+      "remediation": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_warn_age",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_basic",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_ip_forward",
+      "id": "xccdf_com.example.mlps_rule_ip_forward",
+      "result": "notselected",
+      "severity": "high",
+      "title": "应关闭 IPv4 转发",
+      "description": "net.ipv4.ip_forward 应设置为 0。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [],
+      "evidence": [],
+      "evidence_text": "",
+      "evidence_details": [],
+      "remediation_commands": [
+        "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0"
+      ],
+      "remediation_command": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0",
+      "remediation": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_ip_forward",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_basic",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_max_days",
+      "id": "xccdf_com.example.mlps_rule_pass_max_days",
+      "result": "fail",
+      "severity": "medium",
+      "title": "口令最长使用期限应为 90 天",
+      "description": "PASS_MAX_DAYS 应设置为 90，避免口令长期不更换。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_basic",
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:1",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/login.defs: PASS_MAX_DAYS 99999 [OVAL test=false]"
+      ],
+      "evidence_text": "/scan-root/etc/login.defs: PASS_MAX_DAYS 99999 [OVAL test=false]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:1",
+          "test_id": "oval:com.example.mlps:tst:1",
+          "test_result": "false",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/login.defs",
+          "observed_value": "99999",
+          "matched_text": "PASS_MAX_DAYS 99999",
+          "fields": {
+            "filepath": "/scan-root/etc/login.defs",
+            "path": "/scan-root/etc",
+            "filename": "login.defs",
+            "pattern": "^PASS_MAX_DAYS[\\t ]+(\\S+)",
+            "instance": "1",
+            "line": "^PASS_MAX_DAYS[\\t ]+(\\S+)",
+            "text": "PASS_MAX_DAYS 99999",
+            "subexpression": "99999"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs"
+      ],
+      "remediation_command": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs",
+      "remediation": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs",
+      "remediation_text": "编辑 /etc/login.defs，设置 PASS_MAX_DAYS 90。",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_pass_max_days",
+          "complexity": "low",
+          "disruption": "low",
+          "reboot": "",
+          "strategy": "",
+          "command": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level2",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_root_login",
+      "id": "xccdf_com.example.mlps_rule_root_login",
+      "result": "fail",
+      "severity": "high",
+      "title": "应禁止 root 直接远程登录",
+      "description": "sshd_config 中 PermitRootLogin 应设置为 no。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:2",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/ssh/sshd_config: PermitRootLogin yes [OVAL test=false]"
+      ],
+      "evidence_text": "/scan-root/etc/ssh/sshd_config: PermitRootLogin yes [OVAL test=false]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:2",
+          "test_id": "oval:com.example.mlps:tst:2",
+          "test_result": "false",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/ssh/sshd_config",
+          "observed_value": "yes",
+          "matched_text": "PermitRootLogin yes",
+          "fields": {
+            "filepath": "/scan-root/etc/ssh/sshd_config",
+            "path": "/scan-root/etc/ssh",
+            "filename": "sshd_config",
+            "pattern": "^PermitRootLogin[\\t ]+(\\S+)",
+            "instance": "1",
+            "line": "^PermitRootLogin[\\t ]+(\\S+)",
+            "text": "PermitRootLogin yes",
+            "subexpression": "yes"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd"
+      ],
+      "remediation_command": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd",
+      "remediation": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd",
+      "remediation_text": "将 PermitRootLogin 设置为 no 并重启 sshd。",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_root_login",
+          "complexity": "low",
+          "disruption": "medium",
+          "reboot": "",
+          "strategy": "",
+          "command": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level2",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_min_len",
+      "id": "xccdf_com.example.mlps_rule_pass_min_len",
+      "result": "pass",
+      "severity": "medium",
+      "title": "口令最小长度应为 8 位",
+      "description": "pwquality.conf 中 minlen 应至少为 8。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_basic",
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:3",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/security/pwquality.conf: minlen = 8 [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/security/pwquality.conf: minlen = 8 [OVAL test=true]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:3",
+          "test_id": "oval:com.example.mlps:tst:3",
+          "test_result": "true",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/security/pwquality.conf",
+          "observed_value": "8",
+          "matched_text": "minlen = 8",
+          "fields": {
+            "filepath": "/scan-root/etc/security/pwquality.conf",
+            "path": "/scan-root/etc/security",
+            "filename": "pwquality.conf",
+            "pattern": "^minlen[\\t ]*=[\\t ]*([0-9]+)",
+            "instance": "1",
+            "line": "^minlen[\\t ]*=[\\t ]*([0-9]+)",
+            "text": "minlen = 8",
+            "subexpression": "8"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf"
+      ],
+      "remediation_command": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf",
+      "remediation": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_min_len",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level2",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_banner",
+      "id": "xccdf_com.example.mlps_rule_banner",
+      "result": "pass",
+      "severity": "low",
+      "title": "应配置授权使用警告横幅",
+      "description": "/etc/issue.net 应包含授权用户警告语。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:4",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/issue.net: Authorized users only. All activity may be monitored. [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/issue.net: Authorized users only. All activity may be monitored. [OVAL test=true]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:4",
+          "test_id": "oval:com.example.mlps:tst:4",
+          "test_result": "true",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/issue.net",
+          "observed_value": "Authorized users only. All activity may be monitored.",
+          "matched_text": "Authorized users only. All activity may be monitored.",
+          "fields": {
+            "filepath": "/scan-root/etc/issue.net",
+            "path": "/scan-root/etc",
+            "filename": "issue.net",
+            "pattern": "^(.+)$",
+            "instance": "1",
+            "line": "^(.+)$",
+            "text": "Authorized users only. All activity may be monitored.",
+            "subexpression": "Authorized users only. All activity may be monitored."
+          }
+        }
+      ],
+      "remediation_commands": [
+        "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net"
+      ],
+      "remediation_command": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net",
+      "remediation": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_banner",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level2",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_warn_age",
+      "id": "xccdf_com.example.mlps_rule_pass_warn_age",
+      "result": "pass",
+      "severity": "low",
+      "title": "口令到期前应提前 7 天告警",
+      "description": "PASS_WARN_AGE 应设置为 7。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_basic",
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:5",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/login.defs: PASS_WARN_AGE 7 [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/login.defs: PASS_WARN_AGE 7 [OVAL test=true]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:5",
+          "test_id": "oval:com.example.mlps:tst:5",
+          "test_result": "true",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/login.defs",
+          "observed_value": "7",
+          "matched_text": "PASS_WARN_AGE 7",
+          "fields": {
+            "filepath": "/scan-root/etc/login.defs",
+            "path": "/scan-root/etc",
+            "filename": "login.defs",
+            "pattern": "^PASS_WARN_AGE[\\t ]+([0-9]+)",
+            "instance": "1",
+            "line": "^PASS_WARN_AGE[\\t ]+([0-9]+)",
+            "text": "PASS_WARN_AGE 7",
+            "subexpression": "7"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs"
+      ],
+      "remediation_command": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs",
+      "remediation": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_warn_age",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level2",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_ip_forward",
+      "id": "xccdf_com.example.mlps_rule_ip_forward",
+      "result": "notselected",
+      "severity": "high",
+      "title": "应关闭 IPv4 转发",
+      "description": "net.ipv4.ip_forward 应设置为 0。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [],
+      "evidence": [],
+      "evidence_text": "",
+      "evidence_details": [],
+      "remediation_commands": [
+        "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0"
+      ],
+      "remediation_command": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0",
+      "remediation": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_ip_forward",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level2",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_max_days",
+      "id": "xccdf_com.example.mlps_rule_pass_max_days",
+      "result": "fail",
+      "severity": "medium",
+      "title": "口令最长使用期限应为 90 天",
+      "description": "PASS_MAX_DAYS 应设置为 90，避免口令长期不更换。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_basic",
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:1",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/login.defs: PASS_MAX_DAYS 99999 [OVAL test=false]"
+      ],
+      "evidence_text": "/scan-root/etc/login.defs: PASS_MAX_DAYS 99999 [OVAL test=false]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:1",
+          "test_id": "oval:com.example.mlps:tst:1",
+          "test_result": "false",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/login.defs",
+          "observed_value": "99999",
+          "matched_text": "PASS_MAX_DAYS 99999",
+          "fields": {
+            "filepath": "/scan-root/etc/login.defs",
+            "path": "/scan-root/etc",
+            "filename": "login.defs",
+            "pattern": "^PASS_MAX_DAYS[\\t ]+(\\S+)",
+            "instance": "1",
+            "line": "^PASS_MAX_DAYS[\\t ]+(\\S+)",
+            "text": "PASS_MAX_DAYS 99999",
+            "subexpression": "99999"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs"
+      ],
+      "remediation_command": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs",
+      "remediation": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs",
+      "remediation_text": "编辑 /etc/login.defs，设置 PASS_MAX_DAYS 90。",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_pass_max_days",
+          "complexity": "low",
+          "disruption": "low",
+          "reboot": "",
+          "strategy": "",
+          "command": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level3",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_root_login",
+      "id": "xccdf_com.example.mlps_rule_root_login",
+      "result": "fail",
+      "severity": "high",
+      "title": "应禁止 root 直接远程登录",
+      "description": "sshd_config 中 PermitRootLogin 应设置为 no。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:2",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/ssh/sshd_config: PermitRootLogin yes [OVAL test=false]"
+      ],
+      "evidence_text": "/scan-root/etc/ssh/sshd_config: PermitRootLogin yes [OVAL test=false]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:2",
+          "test_id": "oval:com.example.mlps:tst:2",
+          "test_result": "false",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/ssh/sshd_config",
+          "observed_value": "yes",
+          "matched_text": "PermitRootLogin yes",
+          "fields": {
+            "filepath": "/scan-root/etc/ssh/sshd_config",
+            "path": "/scan-root/etc/ssh",
+            "filename": "sshd_config",
+            "pattern": "^PermitRootLogin[\\t ]+(\\S+)",
+            "instance": "1",
+            "line": "^PermitRootLogin[\\t ]+(\\S+)",
+            "text": "PermitRootLogin yes",
+            "subexpression": "yes"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd"
+      ],
+      "remediation_command": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd",
+      "remediation": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd",
+      "remediation_text": "将 PermitRootLogin 设置为 no 并重启 sshd。",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_root_login",
+          "complexity": "low",
+          "disruption": "medium",
+          "reboot": "",
+          "strategy": "",
+          "command": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level3",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_min_len",
+      "id": "xccdf_com.example.mlps_rule_pass_min_len",
+      "result": "pass",
+      "severity": "medium",
+      "title": "口令最小长度应为 8 位",
+      "description": "pwquality.conf 中 minlen 应至少为 8。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_basic",
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:3",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/security/pwquality.conf: minlen = 8 [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/security/pwquality.conf: minlen = 8 [OVAL test=true]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:3",
+          "test_id": "oval:com.example.mlps:tst:3",
+          "test_result": "true",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/security/pwquality.conf",
+          "observed_value": "8",
+          "matched_text": "minlen = 8",
+          "fields": {
+            "filepath": "/scan-root/etc/security/pwquality.conf",
+            "path": "/scan-root/etc/security",
+            "filename": "pwquality.conf",
+            "pattern": "^minlen[\\t ]*=[\\t ]*([0-9]+)",
+            "instance": "1",
+            "line": "^minlen[\\t ]*=[\\t ]*([0-9]+)",
+            "text": "minlen = 8",
+            "subexpression": "8"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf"
+      ],
+      "remediation_command": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf",
+      "remediation": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_min_len",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level3",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_banner",
+      "id": "xccdf_com.example.mlps_rule_banner",
+      "result": "pass",
+      "severity": "low",
+      "title": "应配置授权使用警告横幅",
+      "description": "/etc/issue.net 应包含授权用户警告语。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:4",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/issue.net: Authorized users only. All activity may be monitored. [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/issue.net: Authorized users only. All activity may be monitored. [OVAL test=true]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:4",
+          "test_id": "oval:com.example.mlps:tst:4",
+          "test_result": "true",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/issue.net",
+          "observed_value": "Authorized users only. All activity may be monitored.",
+          "matched_text": "Authorized users only. All activity may be monitored.",
+          "fields": {
+            "filepath": "/scan-root/etc/issue.net",
+            "path": "/scan-root/etc",
+            "filename": "issue.net",
+            "pattern": "^(.+)$",
+            "instance": "1",
+            "line": "^(.+)$",
+            "text": "Authorized users only. All activity may be monitored.",
+            "subexpression": "Authorized users only. All activity may be monitored."
+          }
+        }
+      ],
+      "remediation_commands": [
+        "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net"
+      ],
+      "remediation_command": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net",
+      "remediation": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_banner",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level3",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_warn_age",
+      "id": "xccdf_com.example.mlps_rule_pass_warn_age",
+      "result": "pass",
+      "severity": "low",
+      "title": "口令到期前应提前 7 天告警",
+      "description": "PASS_WARN_AGE 应设置为 7。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_basic",
+        "xccdf_com.example.mlps_profile_level2",
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:5",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/login.defs: PASS_WARN_AGE 7 [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/login.defs: PASS_WARN_AGE 7 [OVAL test=true]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:5",
+          "test_id": "oval:com.example.mlps:tst:5",
+          "test_result": "true",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/login.defs",
+          "observed_value": "7",
+          "matched_text": "PASS_WARN_AGE 7",
+          "fields": {
+            "filepath": "/scan-root/etc/login.defs",
+            "path": "/scan-root/etc",
+            "filename": "login.defs",
+            "pattern": "^PASS_WARN_AGE[\\t ]+([0-9]+)",
+            "instance": "1",
+            "line": "^PASS_WARN_AGE[\\t ]+([0-9]+)",
+            "text": "PASS_WARN_AGE 7",
+            "subexpression": "7"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs"
+      ],
+      "remediation_command": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs",
+      "remediation": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_warn_age",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level3",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3"
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_ip_forward",
+      "id": "xccdf_com.example.mlps_rule_ip_forward",
+      "result": "pass",
+      "severity": "high",
+      "title": "应关闭 IPv4 转发",
+      "description": "net.ipv4.ip_forward 应设置为 0。",
+      "profile_ids": [
+        "xccdf_com.example.mlps_profile_level3"
+      ],
+      "checks": [
+        {
+          "system": "http://oval.mitre.org/XMLSchema/oval-definitions-5",
+          "name": "oval:com.example.mlps:def:6",
+          "href": "#oval0"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/sysctl.d/99-cis.conf: net.ipv4.ip_forward = 0 [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/sysctl.d/99-cis.conf: net.ipv4.ip_forward = 0 [OVAL test=true]",
+      "evidence_details": [
+        {
+          "source": "oval",
+          "definition_id": "oval:com.example.mlps:def:6",
+          "test_id": "oval:com.example.mlps:tst:6",
+          "test_result": "true",
+          "item_type": "textfilecontent_item",
+          "filepath": "/scan-root/etc/sysctl.d/99-cis.conf",
+          "observed_value": "0",
+          "matched_text": "net.ipv4.ip_forward = 0",
+          "fields": {
+            "filepath": "/scan-root/etc/sysctl.d/99-cis.conf",
+            "path": "/scan-root/etc/sysctl.d",
+            "filename": "99-cis.conf",
+            "pattern": "^net.ipv4.ip_forward[\\t ]*=[\\t ]*([01])",
+            "instance": "1",
+            "line": "^net.ipv4.ip_forward[\\t ]*=[\\t ]*([01])",
+            "text": "net.ipv4.ip_forward = 0",
+            "subexpression": "0"
+          }
+        }
+      ],
+      "remediation_commands": [
+        "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0"
+      ],
+      "remediation_command": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0",
+      "remediation": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0",
+      "remediation_text": "",
+      "remediations": [
+        {
+          "system": "urn:xccdf:fix:script:sh",
+          "id": "fix_ip_forward",
+          "complexity": "",
+          "disruption": "",
+          "reboot": "",
+          "strategy": "",
+          "command": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0"
+        }
+      ],
+      "evaluated_at": "2026-11-26T01:49:04+08:00",
+      "host": "mlps-demo-host",
+      "profile_id": "xccdf_com.example.mlps_profile_level3",
+      "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3"
+    }
+  ],
+  "unique_rules": [
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_banner",
+      "id": "xccdf_com.example.mlps_rule_banner",
+      "title": "应配置授权使用警告横幅",
+      "severity": "low",
+      "occurrences": [
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_basic",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic",
+          "result": "notselected"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level2",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2",
+          "result": "pass"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level3",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3",
+          "result": "pass"
+        }
+      ],
+      "evidence": [],
+      "evidence_text": "",
+      "remediation_commands": [
+        "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net"
+      ],
+      "remediation_command": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net",
+      "remediation": "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net",
+      "remediation_text": "",
+      "result": "mixed",
+      "result_values": [
+        "notselected",
+        "pass"
+      ]
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_ip_forward",
+      "id": "xccdf_com.example.mlps_rule_ip_forward",
+      "title": "应关闭 IPv4 转发",
+      "severity": "high",
+      "occurrences": [
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_basic",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic",
+          "result": "notselected"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level2",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2",
+          "result": "notselected"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level3",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3",
+          "result": "pass"
+        }
+      ],
+      "evidence": [],
+      "evidence_text": "",
+      "remediation_commands": [
+        "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0"
+      ],
+      "remediation_command": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0",
+      "remediation": "echo 'net.ipv4.ip_forward = 0' > /etc/sysctl.d/99-cis.conf && sysctl -w net.ipv4.ip_forward=0",
+      "remediation_text": "",
+      "result": "mixed",
+      "result_values": [
+        "notselected",
+        "pass"
+      ]
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_max_days",
+      "id": "xccdf_com.example.mlps_rule_pass_max_days",
+      "title": "口令最长使用期限应为 90 天",
+      "severity": "medium",
+      "occurrences": [
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_basic",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic",
+          "result": "fail"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level2",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2",
+          "result": "fail"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level3",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3",
+          "result": "fail"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/login.defs: PASS_MAX_DAYS 99999 [OVAL test=false]"
+      ],
+      "evidence_text": "/scan-root/etc/login.defs: PASS_MAX_DAYS 99999 [OVAL test=false]",
+      "remediation_commands": [
+        "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs"
+      ],
+      "remediation_command": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs",
+      "remediation": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs",
+      "remediation_text": "编辑 /etc/login.defs，设置 PASS_MAX_DAYS 90。",
+      "result": "fail",
+      "result_values": [
+        "fail"
+      ]
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_min_len",
+      "id": "xccdf_com.example.mlps_rule_pass_min_len",
+      "title": "口令最小长度应为 8 位",
+      "severity": "medium",
+      "occurrences": [
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_basic",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic",
+          "result": "pass"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level2",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2",
+          "result": "pass"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level3",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3",
+          "result": "pass"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/security/pwquality.conf: minlen = 8 [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/security/pwquality.conf: minlen = 8 [OVAL test=true]",
+      "remediation_commands": [
+        "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf"
+      ],
+      "remediation_command": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf",
+      "remediation": "sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' >> /etc/security/pwquality.conf",
+      "remediation_text": "",
+      "result": "pass",
+      "result_values": [
+        "pass"
+      ]
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_pass_warn_age",
+      "id": "xccdf_com.example.mlps_rule_pass_warn_age",
+      "title": "口令到期前应提前 7 天告警",
+      "severity": "low",
+      "occurrences": [
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_basic",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic",
+          "result": "pass"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level2",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2",
+          "result": "pass"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level3",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3",
+          "result": "pass"
+        }
+      ],
+      "evidence": [
+        "/scan-root/etc/login.defs: PASS_WARN_AGE 7 [OVAL test=true]"
+      ],
+      "evidence_text": "/scan-root/etc/login.defs: PASS_WARN_AGE 7 [OVAL test=true]",
+      "remediation_commands": [
+        "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs"
+      ],
+      "remediation_command": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs",
+      "remediation": "sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' >> /etc/login.defs",
+      "remediation_text": "",
+      "result": "pass",
+      "result_values": [
+        "pass"
+      ]
+    },
+    {
+      "rule_id": "xccdf_com.example.mlps_rule_root_login",
+      "id": "xccdf_com.example.mlps_rule_root_login",
+      "title": "应禁止 root 直接远程登录",
+      "severity": "high",
+      "occurrences": [
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_basic",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_basic",
+          "result": "notselected"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level2",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level2",
+          "result": "fail"
+        },
+        {
+          "host": "mlps-demo-host",
+          "profile_id": "xccdf_com.example.mlps_profile_level3",
+          "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3",
+          "result": "fail"
+        }
+      ],
+      "evidence": [],
+      "evidence_text": "",
+      "remediation_commands": [
+        "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd"
+      ],
+      "remediation_command": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd",
+      "remediation": "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd",
+      "remediation_text": "将 PermitRootLogin 设置为 no 并重启 sshd。",
+      "result": "mixed",
+      "result_values": [
+        "fail",
+        "notselected"
+      ]
+    }
+  ]
+}

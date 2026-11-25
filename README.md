@@ -78,3 +78,23 @@ oscap xccdf generate guide --profile PROFILE XCCDF-FILE > XCCDF-GUIDE-FILE
 ```
 oscap xccdf generate report XCCDF-RESULT-FILE > XCCDF-REPORT-FILE
 ```
+
+### Structured results, merging and scan comparison
+
+For assessments that require machine-readable, per-rule output (rule ID,
+result, evidence and remediation commands), result merging across profiles or
+hosts, and comparison of two scans of the same host, use the dependency-free
+`utils/oscap-structured` tool on XCCDF/ARF result files:
+
+```
+oscap xccdf eval --profile PROFILE --results results.xml \
+    --results-arf results.arf.xml CONTENT
+python3 utils/oscap-structured export results.arf.xml -o rules.json
+python3 utils/oscap-structured merge profile1.arf.xml profile2.arf.xml -o merged.json
+python3 utils/oscap-structured diff before.arf.xml after.arf.xml
+```
+
+It works with existing XCCDF 1.1/1.2 profiles and SCAP datastreams. Run
+`bash acceptance/run_acceptance.sh --skip-live` for the three-profile
+parseability, merge and same-host change-detection acceptance checks; see
+[`acceptance/README.md`](acceptance/README.md) for the full schema and examples.

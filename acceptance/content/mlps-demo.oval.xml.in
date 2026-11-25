@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<oval_definitions xmlns="http://oval.mitre.org/XMLSchema/oval-definitions-5"
+  xmlns:ind="http://oval.mitre.org/XMLSchema/oval-definitions-5#independent"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://oval.mitre.org/XMLSchema/oval-definitions-5 oval-definitions-schema.xsd"
+  xmlns:oval="http://oval.mitre.org/XMLSchema/oval-common-5">
+  <generator>
+    <oval:schema_version>5.11.3</oval:schema_version>
+    <oval:timestamp>2026-01-01T00:00:00</oval:timestamp>
+  </generator>
+  <definitions>
+    <definition class="compliance" id="oval:com.example.mlps:def:1" version="1">
+      <metadata><title>PASS_MAX_DAYS is 90</title><description>check</description></metadata>
+      <criteria><criterion test_ref="oval:com.example.mlps:tst:1"/></criteria>
+    </definition>
+    <definition class="compliance" id="oval:com.example.mlps:def:2" version="1">
+      <metadata><title>PermitRootLogin no</title><description>check</description></metadata>
+      <criteria><criterion test_ref="oval:com.example.mlps:tst:2"/></criteria>
+    </definition>
+    <definition class="compliance" id="oval:com.example.mlps:def:3" version="1">
+      <metadata><title>minlen 8</title><description>check</description></metadata>
+      <criteria><criterion test_ref="oval:com.example.mlps:tst:3"/></criteria>
+    </definition>
+    <definition class="compliance" id="oval:com.example.mlps:def:4" version="1">
+      <metadata><title>login banner</title><description>check</description></metadata>
+      <criteria><criterion test_ref="oval:com.example.mlps:tst:4"/></criteria>
+    </definition>
+    <definition class="compliance" id="oval:com.example.mlps:def:5" version="1">
+      <metadata><title>PASS_WARN_AGE 7</title><description>check</description></metadata>
+      <criteria><criterion test_ref="oval:com.example.mlps:tst:5"/></criteria>
+    </definition>
+    <definition class="compliance" id="oval:com.example.mlps:def:6" version="1">
+      <metadata><title>ip_forward 0</title><description>check</description></metadata>
+      <criteria><criterion test_ref="oval:com.example.mlps:tst:6"/></criteria>
+    </definition>
+  </definitions>
+  <tests>
+    <ind:textfilecontent54_test id="oval:com.example.mlps:tst:1" check="all" version="1" comment="pass max days">
+      <ind:object object_ref="oval:com.example.mlps:obj:1"/><ind:state state_ref="oval:com.example.mlps:ste:1"/>
+    </ind:textfilecontent54_test>
+    <ind:textfilecontent54_test id="oval:com.example.mlps:tst:2" check="all" version="1" comment="root login">
+      <ind:object object_ref="oval:com.example.mlps:obj:2"/><ind:state state_ref="oval:com.example.mlps:ste:2"/>
+    </ind:textfilecontent54_test>
+    <ind:textfilecontent54_test id="oval:com.example.mlps:tst:3" check="all" version="1" comment="minlen">
+      <ind:object object_ref="oval:com.example.mlps:obj:3"/><ind:state state_ref="oval:com.example.mlps:ste:3"/>
+    </ind:textfilecontent54_test>
+    <ind:textfilecontent54_test id="oval:com.example.mlps:tst:4" check="all" version="1" comment="banner">
+      <ind:object object_ref="oval:com.example.mlps:obj:4"/><ind:state state_ref="oval:com.example.mlps:ste:4"/>
+    </ind:textfilecontent54_test>
+    <ind:textfilecontent54_test id="oval:com.example.mlps:tst:5" check="all" version="1" comment="warn age">
+      <ind:object object_ref="oval:com.example.mlps:obj:5"/><ind:state state_ref="oval:com.example.mlps:ste:5"/>
+    </ind:textfilecontent54_test>
+    <ind:textfilecontent54_test id="oval:com.example.mlps:tst:6" check="all" version="1" comment="ip forward">
+      <ind:object object_ref="oval:com.example.mlps:obj:6"/><ind:state state_ref="oval:com.example.mlps:ste:6"/>
+    </ind:textfilecontent54_test>
+  </tests>
+  <objects>
+    <ind:textfilecontent54_object id="oval:com.example.mlps:obj:1" version="1">
+      <ind:filepath>@SCAN_ROOT@/etc/login.defs</ind:filepath>
+      <ind:pattern operation="pattern match">^PASS_MAX_DAYS[\t ]+(\S+)</ind:pattern>
+      <ind:instance datatype="int" operation="equals">1</ind:instance>
+    </ind:textfilecontent54_object>
+    <ind:textfilecontent54_object id="oval:com.example.mlps:obj:2" version="1">
+      <ind:filepath>@SCAN_ROOT@/etc/ssh/sshd_config</ind:filepath>
+      <ind:pattern operation="pattern match">^PermitRootLogin[\t ]+(\S+)</ind:pattern>
+      <ind:instance datatype="int" operation="equals">1</ind:instance>
+    </ind:textfilecontent54_object>
+    <ind:textfilecontent54_object id="oval:com.example.mlps:obj:3" version="1">
+      <ind:filepath>@SCAN_ROOT@/etc/security/pwquality.conf</ind:filepath>
+      <ind:pattern operation="pattern match">^minlen[\t ]*=[\t ]*([0-9]+)</ind:pattern>
+      <ind:instance datatype="int" operation="equals">1</ind:instance>
+    </ind:textfilecontent54_object>
+    <ind:textfilecontent54_object id="oval:com.example.mlps:obj:4" version="1">
+      <ind:filepath>@SCAN_ROOT@/etc/issue.net</ind:filepath>
+      <ind:pattern operation="pattern match">^(.+)$</ind:pattern>
+      <ind:instance datatype="int" operation="equals">1</ind:instance>
+    </ind:textfilecontent54_object>
+    <ind:textfilecontent54_object id="oval:com.example.mlps:obj:5" version="1">
+      <ind:filepath>@SCAN_ROOT@/etc/login.defs</ind:filepath>
+      <ind:pattern operation="pattern match">^PASS_WARN_AGE[\t ]+([0-9]+)</ind:pattern>
+      <ind:instance datatype="int" operation="equals">1</ind:instance>
+    </ind:textfilecontent54_object>
+    <ind:textfilecontent54_object id="oval:com.example.mlps:obj:6" version="1">
+      <ind:filepath>@SCAN_ROOT@/etc/sysctl.d/99-cis.conf</ind:filepath>
+      <ind:pattern operation="pattern match">^net.ipv4.ip_forward[\t ]*=[\t ]*([01])</ind:pattern>
+      <ind:instance datatype="int" operation="equals">1</ind:instance>
+    </ind:textfilecontent54_object>
+  </objects>
+  <states>
+    <ind:textfilecontent54_state id="oval:com.example.mlps:ste:1" version="1">
+      <ind:subexpression datatype="string" operation="pattern match">^90$</ind:subexpression>
+    </ind:textfilecontent54_state>
+    <ind:textfilecontent54_state id="oval:com.example.mlps:ste:2" version="1">
+      <ind:subexpression datatype="string" operation="pattern match">^no$</ind:subexpression>
+    </ind:textfilecontent54_state>
+    <ind:textfilecontent54_state id="oval:com.example.mlps:ste:3" version="1">
+      <ind:subexpression datatype="int" operation="greater than or equal">8</ind:subexpression>
+    </ind:textfilecontent54_state>
+    <ind:textfilecontent54_state id="oval:com.example.mlps:ste:4" version="1">
+      <ind:subexpression datatype="string" operation="pattern match">^Authorized users only</ind:subexpression>
+    </ind:textfilecontent54_state>
+    <ind:textfilecontent54_state id="oval:com.example.mlps:ste:5" version="1">
+      <ind:subexpression datatype="int" operation="equals">7</ind:subexpression>
+    </ind:textfilecontent54_state>
+    <ind:textfilecontent54_state id="oval:com.example.mlps:ste:6" version="1">
+      <ind:subexpression datatype="int" operation="equals">0</ind:subexpression>
+    </ind:textfilecontent54_state>
+  </states>
+</oval_definitions>

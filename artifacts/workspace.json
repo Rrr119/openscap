@@ -1,0 +1,17 @@
+{
+  "root": "/home/dev/feedback/uid38814",
+  "B": "/home/dev/feedback/uid38814",
+  "sha": "703b686e3244480655990ef24fb90f65c4946760",
+  "wslDistro": "Ubuntu-26.04",
+  "source": {
+    "owner": "OpenSCAP",
+    "repo": "openscap",
+    "sha": "703b686e3244480655990ef24fb90f65c4946760"
+  },
+  "fork": {
+    "owner": "Rrr119",
+    "repo": "openscap",
+    "cloneUrl": "https://github.com/Rrr119/openscap.git"
+  },
+  "at": "2026-11-25T17:03:48.952Z"
+}

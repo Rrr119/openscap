@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Benchmark xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_com.example.mlps_benchmark_demo" style="SCAP_1.3" xml:lang="zh-CN">
+  <status date="2026-01-01">draft</status>
+  <title>等级保护主机安全基线（演示）</title>
+  <description>用于机器可读结构化结果、结果合并与两次扫描比对验收的演示 Benchmark，包含三个 Profile。</description>
+  <version>1.0</version>
+
+  <Profile id="xccdf_com.example.mlps_profile_basic">
+    <title>基础基线</title>
+    <description>最小集合：口令有效期、最小长度、告警天数。</description>
+    <select idref="xccdf_com.example.mlps_rule_pass_max_days" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_min_len" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_warn_age" selected="true"/>
+  </Profile>
+
+  <Profile id="xccdf_com.example.mlps_profile_level2">
+    <title>等保二级</title>
+    <description>在基础基线之上增加 root 远程登录与登录横幅。</description>
+    <select idref="xccdf_com.example.mlps_rule_pass_max_days" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_min_len" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_warn_age" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_root_login" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_banner" selected="true"/>
+  </Profile>
+
+  <Profile id="xccdf_com.example.mlps_profile_level3">
+    <title>等保三级</title>
+    <description>全部六条规则，包含内核网络参数。</description>
+    <select idref="xccdf_com.example.mlps_rule_pass_max_days" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_min_len" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_pass_warn_age" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_root_login" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_banner" selected="true"/>
+    <select idref="xccdf_com.example.mlps_rule_ip_forward" selected="true"/>
+  </Profile>
+
+  <Rule id="xccdf_com.example.mlps_rule_pass_max_days" selected="false" severity="medium">
+    <title>口令最长使用期限应为 90 天</title>
+    <description>PASS_MAX_DAYS 应设置为 90，避免口令长期不更换。</description>
+    <fixtext>编辑 /etc/login.defs，设置 PASS_MAX_DAYS 90。</fixtext>
+    <fix system="urn:xccdf:fix:script:sh" id="fix_pass_max_days" complexity="low" disruption="low">grep -qE '^PASS_MAX_DAYS' /etc/login.defs &amp;&amp; sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' &gt;&gt; /etc/login.defs</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:1" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+
+  <Rule id="xccdf_com.example.mlps_rule_root_login" selected="false" severity="high">
+    <title>应禁止 root 直接远程登录</title>
+    <description>sshd_config 中 PermitRootLogin 应设置为 no。</description>
+    <fixtext>将 PermitRootLogin 设置为 no 并重启 sshd。</fixtext>
+    <fix system="urn:xccdf:fix:script:sh" id="fix_root_login" complexity="low" disruption="medium">sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' &gt;&gt; /etc/ssh/sshd_config
+systemctl restart sshd</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:2" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+
+  <Rule id="xccdf_com.example.mlps_rule_pass_min_len" selected="false" severity="medium">
+    <title>口令最小长度应为 8 位</title>
+    <description>pwquality.conf 中 minlen 应至少为 8。</description>
+    <fix system="urn:xccdf:fix:script:sh" id="fix_min_len">sed -i -E 's/^#?minlen.*/minlen = 8/' /etc/security/pwquality.conf || echo 'minlen = 8' &gt;&gt; /etc/security/pwquality.conf</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:3" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+
+  <Rule id="xccdf_com.example.mlps_rule_banner" selected="false" severity="low">
+    <title>应配置授权使用警告横幅</title>
+    <description>/etc/issue.net 应包含授权用户警告语。</description>
+    <fix system="urn:xccdf:fix:script:sh" id="fix_banner">echo 'Authorized users only. All activity may be monitored.' &gt; /etc/issue.net</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:4" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+
+  <Rule id="xccdf_com.example.mlps_rule_pass_warn_age" selected="false" severity="low">
+    <title>口令到期前应提前 7 天告警</title>
+    <description>PASS_WARN_AGE 应设置为 7。</description>
+    <fix system="urn:xccdf:fix:script:sh" id="fix_warn_age">sed -i -E 's/^PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs || echo 'PASS_WARN_AGE 7' &gt;&gt; /etc/login.defs</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:5" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+
+  <Rule id="xccdf_com.example.mlps_rule_ip_forward" selected="false" severity="high">
+    <title>应关闭 IPv4 转发</title>
+    <description>net.ipv4.ip_forward 应设置为 0。</description>
+    <fix system="urn:xccdf:fix:script:sh" id="fix_ip_forward">echo 'net.ipv4.ip_forward = 0' &gt; /etc/sysctl.d/99-cis.conf &amp;&amp; sysctl -w net.ipv4.ip_forward=0</fix>
+    <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+      <check-content-ref name="oval:com.example.mlps:def:6" href="mlps-demo.oval.xml"/>
+    </check>
+  </Rule>
+</Benchmark>

@@ -1,0 +1,120 @@
+{
+  "tool": "oscap-structured",
+  "tool_version": "1.0.0",
+  "schema": "oscap-structured-results/v1",
+  "kind": "structured_diff",
+  "generated_at": "2026-11-25T18:08:55Z",
+  "host": "mlps-demo-host",
+  "same_host": true,
+  "profile_id": "xccdf_com.example.mlps_profile_level3",
+  "old": {
+    "host": "mlps-demo-host",
+    "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3",
+    "end_time": "2026-11-26T01:49:04+08:00",
+    "profile_id": "xccdf_com.example.mlps_profile_level3"
+  },
+  "new": {
+    "host": "mlps-demo-host",
+    "scan_id": "xccdf_org.open-scap_testresult_xccdf_com.example.mlps_profile_level3",
+    "end_time": "2026-11-26T01:52:59+08:00",
+    "profile_id": "xccdf_com.example.mlps_profile_level3"
+  },
+  "has_changes": true,
+  "changed_rules": [
+    "xccdf_com.example.mlps_rule_banner",
+    "xccdf_com.example.mlps_rule_pass_max_days",
+    "xccdf_com.example.mlps_rule_root_login"
+  ],
+  "summary": {
+    "total_rules_old": 6,
+    "total_rules_new": 6,
+    "changed": 3,
+    "by_type": {
+      "result_changed": 3
+    },
+    "unchanged": 3
+  },
+  "changes": [
+    {
+      "change_type": "result_changed",
+      "rule_id": "xccdf_com.example.mlps_rule_banner",
+      "id": "xccdf_com.example.mlps_rule_banner",
+      "title": "应配置授权使用警告横幅",
+      "severity": "low",
+      "old_result": "pass",
+      "new_result": "fail",
+      "old_evidence": [
+        "/scan-root/etc/issue.net: Authorized users only. All activity may be monitored. [OVAL test=true]"
+      ],
+      "new_evidence": [
+        "/scan-root/etc/issue.net: TODO: set banner later [OVAL test=false]"
+      ],
+      "old_remediation_commands": [
+        "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net"
+      ],
+      "new_remediation_commands": [
+        "echo 'Authorized users only. All activity may be monitored.' > /etc/issue.net"
+      ],
+      "changes": {
+        "result": {
+          "old": "pass",
+          "new": "fail"
+        }
+      }
+    },
+    {
+      "change_type": "result_changed",
+      "rule_id": "xccdf_com.example.mlps_rule_pass_max_days",
+      "id": "xccdf_com.example.mlps_rule_pass_max_days",
+      "title": "口令最长使用期限应为 90 天",
+      "severity": "medium",
+      "old_result": "fail",
+      "new_result": "pass",
+      "old_evidence": [
+        "/scan-root/etc/login.defs: PASS_MAX_DAYS 99999 [OVAL test=false]"
+      ],
+      "new_evidence": [
+        "/scan-root/etc/login.defs: PASS_MAX_DAYS 90 [OVAL test=true]"
+      ],
+      "old_remediation_commands": [
+        "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs"
+      ],
+      "new_remediation_commands": [
+        "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i -E 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS 90/' /etc/login.defs || echo 'PASS_MAX_DAYS 90' >> /etc/login.defs"
+      ],
+      "changes": {
+        "result": {
+          "old": "fail",
+          "new": "pass"
+        }
+      }
+    },
+    {
+      "change_type": "result_changed",
+      "rule_id": "xccdf_com.example.mlps_rule_root_login",
+      "id": "xccdf_com.example.mlps_rule_root_login",
+      "title": "应禁止 root 直接远程登录",
+      "severity": "high",
+      "old_result": "fail",
+      "new_result": "pass",
+      "old_evidence": [
+        "/scan-root/etc/ssh/sshd_config: PermitRootLogin yes [OVAL test=false]"
+      ],
+      "new_evidence": [
+        "/scan-root/etc/ssh/sshd_config: PermitRootLogin no [OVAL test=true]"
+      ],
+      "old_remediation_commands": [
+        "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd"
+      ],
+      "new_remediation_commands": [
+        "sed -i -E 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config\nsystemctl restart sshd"
+      ],
+      "changes": {
+        "result": {
+          "old": "fail",
+          "new": "pass"
+        }
+      }
+    }
+  ]
+}
